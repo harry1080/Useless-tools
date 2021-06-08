@@ -1,0 +1,11 @@
+//任务格式
+{
+	"job_id":"123",
+	"commands":[]
+}
+
+{
+	"type":"shell",
+	"pars":[],
+	"data":""
+}

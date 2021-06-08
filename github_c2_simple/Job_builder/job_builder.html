@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>JOB BUILDER</title>
+	<script src="js/vue.js"></script>
+	<script src="js/crc32.js"></script>
+	<style>
+		#text-pars {
+			width: 60%;
+		}
+
+		#div-add-cmd {
+			border: 1px solid gray;
+		}
+
+		table.gridtable {
+			font-family: verdana, arial, sans-serif;
+			font-size: 11px;
+			color: #333333;
+			border-width: 1px;
+			border-color: #666666;
+			border-collapse: collapse;
+		}
+
+		table.gridtable th {
+			border-width: 1px;
+			padding: 8px;
+			border-style: solid;
+			border-color: #666666;
+			background-color: #dedede;
+		}
+
+		table.gridtable td {
+			border-width: 1px;
+			padding: 8px;
+			border-style: solid;
+			border-color: #666666;
+			background-color: #ffffff;
+		}
+
+		p {
+			width: 100%;
+			word-wrap: break-word;
+			word-break: break-all;
+		}
+	</style>
+</head>
+
+<body>
+	<div id='app'>
+		<div id='job-info'>
+			<p>Job ID: {{job_id}}</p>
+			<p>Date: {{date_now}}</p>
+			<p>Time Stamp:{{time_stamp}}</p>
+			<button @click="GenJobB64()">Gen Job Base64</button>
+		</div>
+		<br>
+		<div id='div-add-cmd'>
+			Command:
+			<select v-model="type_selected">
+				<option disabled value="">请选择</option>
+				<option v-for="cmd of cmd_list" :value='cmd.type'>{{cmd.name}}</option>
+			</select>
+			<p>Type: {{type_selected}}</p>
+			<p>Parameters:</p>
+			<input v-model="parameter" v-on:input="par2b64()" type="text" id='text-pars'>
+			<p style="color: gray;">{{par_base64}}</p>
+			<button v-on:click="add_cmd()">Add</button>
+		</div>
+		<br>
+		<div id='commands-show'>
+			<table id='commands-table' class="gridtable">
+				<tr class="header">
+					<td>ID</td>
+					<td>Type</td>
+					<td>Parameters</td>
+					<td>OPT</td>
+				</tr>
+				<tr v-for="(item, index) of job_cmd_list">
+					<td>{{index+1}}</td>
+					<td>{{item.type}}</td>
+					<td>{{item.par}}</td>
+					<td>
+						<a href="#" v-on:click="remove_cmd(index)">Remove</a>
+					</td>
+				</tr>
+			</table>
+		</div>
+		<div id='div-job-b64'>
+			<p>{{job_base64}}</p>
+		</div>
+	</div>
+
+</body>
+<script>
+	var commands_list = [{ name: 'HttpDownload', type: 'http_down' }, { name: 'shell', type: 'shell' }]
+	var time_stamp = Date.parse(new Date()).toString()
+	function arrayBufferToBase64(buffer) {
+		var binary = '';
+		var bytes = new Uint8Array(buffer);
+		var len = bytes.byteLength;
+		for (var i = 0; i < len; i++) {
+			binary += String.fromCharCode(bytes[i]);
+		}
+		return window.btoa(binary);
+	}
+	//var date_now = new Date().toDateString
+	new Vue({
+		el: "#app",
+		data: {
+			cmd_list: commands_list,
+			time_stamp: time_stamp,
+			job_id: crc32(time_stamp).toString(),
+			date_now: new Date().toDateString(),
+			type_selected: '',
+			parameter: '',
+			par_base64: '',
+			job_base64: '',
+			job_cmd_list: []
+		},
+		methods: {
+			remove_cmd(_index) {
+				this.job_cmd_list.splice(_index, 1)
+				console.log('[-]Remove command')
+			},
+			add_cmd() {
+				if (this.type_selected == '') {
+					return
+				}
+				var cmd_obj = {
+					type: this.type_selected,
+					par: this.par_base64
+				}
+				this.job_cmd_list.push(cmd_obj)
+			},
+			par2b64() {
+				this.par_base64 = window.btoa(this.parameter)
+			},
+			GenJobB64() {
+				var job_obj = {
+					id: this.job_id,
+					commands: this.job_cmd_list
+				}
+				var job_josn = JSON.stringify(job_obj)
+				console.log(job_josn)
+				this.job_base64 = arrayBufferToBase64(this.Xor_encrypt(job_josn, 0xA))
+			},
+			Xor_encrypt(json_str, key) {
+				var buf = new Array()
+				for (var i = 0; i < json_str.length; ++i) {
+					buf.push(json_str.charCodeAt(i) ^ key)
+				}
+				return buf
+			}
+		}
+
+	})
+</script>
+
+</html>
